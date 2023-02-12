@@ -11,7 +11,7 @@ class _PixelDraw:
     def _compute_charset_features(self):
         pass
 
-    def _find_best_matched_char(self, block):
+    def _find_best_matched_char(self, block: np.array):
         pass
 
     def __init__(self, fontpath='Menlo.ttc', fontsize=14):
@@ -89,7 +89,7 @@ class BrightnessPixelDraw(_PixelDraw):
         self._brightnesses =          [(char, scale_brightness(brightness, reverse_color=False))
                                        for char, brightness in brightnesses[::-1]]
 
-    def _find_best_matched_char(self, block, reverse_color=True):
+    def _find_best_matched_char(self, block: np.array, reverse_color=True):
         brightness = self._get_brightness(block)
         brightnesses = self._brightnesses_reversed if reverse_color else self._brightnesses
         idx = bisect.bisect_left(brightnesses, brightness,
@@ -97,7 +97,7 @@ class BrightnessPixelDraw(_PixelDraw):
         return brightnesses[idx][0]
 
     @staticmethod
-    def _get_brightness(arr):
+    def _get_brightness(arr: np.array):
         "arr should be an image array in 'L' mode"
         return np.mean(arr)
 
@@ -117,7 +117,8 @@ class MinDiffPixelDraw(_PixelDraw):
         self._char_arr = np.array([arr for arr in self._char_to_arr.values()])
         self._char_arr_reversed = 255 - self._char_arr
 
-    def _find_best_matched_char(self, block, reversed_color=True):
+    def _find_best_matched_char(self, block: np.array, reversed_color=True):
         char_arr = self._char_arr_reversed if reversed_color else self._char_arr
+        # find character pixels with least Euclidean distance from the block
         min_idx = np.argmin(np.linalg.norm(block - char_arr, axis=(1, 2)))
         return self.CHARSET[min_idx]
