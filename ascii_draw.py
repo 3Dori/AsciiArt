@@ -5,7 +5,7 @@ import string
 import bisect
 
 
-class _PixelDraw:
+class _AsciiDraw:
     CHARSET = ' 1234567890!@#$%^&*().awjiWMXQ[]='
 
     def _compute_charset_features(self):
@@ -71,7 +71,7 @@ class _PixelDraw:
         self._char_to_arr[char] = np.asarray(image)
 
 
-class BrightnessPixelDraw(_PixelDraw):
+class BrightnessAsciiDraw(_AsciiDraw):
     def _compute_charset_features(self):
         char_to_brightness = {char: self._get_brightness(arr)
                               for char, arr in self._char_to_arr.items()}
@@ -102,7 +102,7 @@ class BrightnessPixelDraw(_PixelDraw):
         return np.mean(arr)
 
 
-class MinDiffPixelDraw(_PixelDraw):
+class MinDiffAsciiDraw(_AsciiDraw):
     CHARSET = string.ascii_letters + string.digits + string.punctuation + ' '
 
     def __init__(self, fontpath='Menlo.ttc', fontsize=14, filter_radius=1.3):
