@@ -51,30 +51,30 @@ class _PixelDraw:
     def load_chars_with_font(self, fontpath, fontsize, filters=None):
         from PIL import ImageFont
 
-        self.char_to_arr = {}
-        font = ImageFont.truetype(fontpath, fontsize)
+        self._char_to_arr = {}
+        self.font = ImageFont.truetype(fontpath, fontsize)
         MONOSPACED_CHAR = ' '
-        self._w, self._h = font.getsize(MONOSPACED_CHAR)
+        self._w, self._h = self.font.getsize(MONOSPACED_CHAR)
 
         for char in self.CHARSET:
-            self._load_char(char, font, filters)
+            self._load_char(char, filters)
     
-    def _load_char(self, char, font, filters=None):
+    def _load_char(self, char, filters=None):
         from PIL import ImageDraw
 
         image = Image.new('L', (self._w, self._h), 0)
         draw = ImageDraw.Draw(image)
-        draw.text((0, 0), text=char, font=font, fill="white")
+        draw.text((0, 0), text=char, font=self.font, fill="white")
         if filters:
             for filter in filters:
                 image = image.filter(filter)
-        self.char_to_arr[char] = np.asarray(image)
+        self._char_to_arr[char] = np.asarray(image)
 
 
 class BrightnessPixelDraw(_PixelDraw):
     def _compute_charset_features(self):
         char_to_brightness = {char: self._get_brightness(arr)
-                              for char, arr in self.char_to_arr.items()}
+                              for char, arr in self._char_to_arr.items()}
         brightnesses = sorted(char_to_brightness.items(),
                               key=lambda pair_char_brightness: pair_char_brightness[1],
                               reverse=True)
@@ -100,3 +100,29 @@ class BrightnessPixelDraw(_PixelDraw):
     def _get_brightness(arr):
         "arr should be an image array in 'L' mode"
         return np.mean(arr)
+
+
+class MinDiffPixelDraw(_PixelDraw):
+    CHARSET = string.ascii_letters + string.digits + string.punctuation + ' '
+
+    def _compute_charset_features(self):
+        from PIL import ImageFilter
+        # filters = [ImageFilter.GaussianBlur(1.0)]
+        filters = None
+        for char in self.CHARSET:
+            self._load_char(char, filters)
+        self._char_arr = np.array([arr for arr in self._char_to_arr.values()])
+        # self._char_to_arr = [(char, arr) for char, arr in self._char_to_arr.items()]
+        self._char_arr_reversed = 255 - self._char_arr
+
+    def _find_best_matched_char(self, block, reversed_color=True):
+        char_arr = self._char_arr_reversed if reversed_color else self._char_arr
+        # min_diff = np.inf
+        # min_char = ''
+        # print([np.linalg.norm(block - arr) for _, arr in char_to_arr])
+        # for char, arr in char_to_arr:
+        #     diff = np.linalg.norm(block - arr)
+        #     if diff < min_diff:
+        #         min_char = char
+        min_idx = np.argmin(np.linalg.norm(block - char_arr, axis=(1, 2)))
+        return self.CHARSET[min_idx]
