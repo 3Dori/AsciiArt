@@ -105,24 +105,19 @@ class BrightnessPixelDraw(_PixelDraw):
 class MinDiffPixelDraw(_PixelDraw):
     CHARSET = string.ascii_letters + string.digits + string.punctuation + ' '
 
+    def __init__(self, fontpath='Menlo.ttc', fontsize=14, filter_radius=1.3):
+        self._filter_radius = filter_radius
+        super().__init__(fontpath, fontsize)
+
     def _compute_charset_features(self):
         from PIL import ImageFilter
-        # filters = [ImageFilter.GaussianBlur(1.0)]
-        filters = None
+        filters = [ImageFilter.GaussianBlur(self._filter_radius)]
         for char in self.CHARSET:
             self._load_char(char, filters)
         self._char_arr = np.array([arr for arr in self._char_to_arr.values()])
-        # self._char_to_arr = [(char, arr) for char, arr in self._char_to_arr.items()]
         self._char_arr_reversed = 255 - self._char_arr
 
     def _find_best_matched_char(self, block, reversed_color=True):
         char_arr = self._char_arr_reversed if reversed_color else self._char_arr
-        # min_diff = np.inf
-        # min_char = ''
-        # print([np.linalg.norm(block - arr) for _, arr in char_to_arr])
-        # for char, arr in char_to_arr:
-        #     diff = np.linalg.norm(block - arr)
-        #     if diff < min_diff:
-        #         min_char = char
         min_idx = np.argmin(np.linalg.norm(block - char_arr, axis=(1, 2)))
         return self.CHARSET[min_idx]
