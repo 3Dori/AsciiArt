@@ -1,5 +1,4 @@
 from PIL import Image
-# from PIL import ImageFilter
 import numpy as np
 
 import string
@@ -16,11 +15,19 @@ class _PixelDraw:
         pass
 
     def __init__(self, fontpath='Menlo.ttc', fontsize=14):
-        from PIL import ImageFilter
-
-        self.load_chars_with_font(fontpath, fontsize,
-                                  filters=[ImageFilter.GaussianBlur(1.0)])
+        self.load_chars_with_font(fontpath, fontsize)
         self._compute_charset_features()
+
+    def image_to_ascii(self, imagepath, scale=None, linespacing=0.8, reverse_color=True):
+        arr = self._load_image_arr_monochrome(imagepath, scale, linespacing)
+        canvas_h, canvas_w = arr.shape[0] // self._h, arr.shape[1] // self._w
+        ascii_canvas = np.zeros((canvas_h, canvas_w), dtype=str)
+        for x in range(canvas_w):
+            for y in range(canvas_h):
+                block = arr[y*self._h:y*self._h+self._h, x*self._w:x*self._w+self._w]
+                char = self._find_best_matched_char(block, reverse_color)
+                ascii_canvas[y, x] = char
+        self._print_canvas(ascii_canvas)
 
     @staticmethod
     def _load_image_arr_monochrome(imagepath, scale=None, linespacing=None):
@@ -41,24 +48,13 @@ class _PixelDraw:
         for row in canvas:
             print(''.join(row))
 
-    def image_to_ascii(self, imagepath, scale=None, linespacing=0.8, reverse_color=True):
-        arr = self._load_image_arr_monochrome(imagepath, scale, linespacing)
-        canvas_h, canvas_w = arr.shape[0] // self.h, arr.shape[1] // self.w
-        ascii_canvas = np.zeros((canvas_h, canvas_w), dtype=str)
-        for x in range(canvas_w):
-            for y in range(canvas_h):
-                block = arr[y*self.h:y*self.h+self.h, x*self.w:x*self.w+self.w]
-                char = self._find_best_matched_char(block, reverse_color)
-                ascii_canvas[y, x] = char
-        self._print_canvas(ascii_canvas)
-
     def load_chars_with_font(self, fontpath, fontsize, filters=None):
         from PIL import ImageFont
 
         self.char_to_arr = {}
         font = ImageFont.truetype(fontpath, fontsize)
         MONOSPACED_CHAR = ' '
-        self.w, self.h = font.getsize(MONOSPACED_CHAR)
+        self._w, self._h = font.getsize(MONOSPACED_CHAR)
 
         for char in self.CHARSET:
             self._load_char(char, font, filters)
@@ -66,7 +62,7 @@ class _PixelDraw:
     def _load_char(self, char, font, filters=None):
         from PIL import ImageDraw
 
-        image = Image.new('L', (self.w, self.h), 0)
+        image = Image.new('L', (self._w, self._h), 0)
         draw = ImageDraw.Draw(image)
         draw.text((0, 0), text=char, font=font, fill="white")
         if filters:
