@@ -1,7 +1,7 @@
 # AsciiArt
 AsciiArt in Python
 
-Given an image, the program prints ASCII texts that represent the Image.
+Given an image, the program prints ASCII texts that represent the image.
 
 ```Python
 from pixel_draw import BrightnessAsciiDraw, MinDiffAsciiDraw
